@@ -55,12 +55,11 @@ const RootQuery = new GraphQLObjectType({
       type: AuthorType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return _.find(books, { id: args.id });
+        return _.find(authors, { id: args.id });
       }
     }
   }
 });
-
 module.exports = new GraphQLSchema({
   query: RootQuery
 });
