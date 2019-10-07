@@ -1,0 +1,26 @@
+{
+  "name": "graphql-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cedrickevers/graphql-test.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cedrickevers/graphql-test/issues"
+  },
+  "homepage": "https://github.com/cedrickevers/graphql-test#readme",
+  "dependencies": {
+    "express-graphql": "^0.9.0",
+    "graphql": "^14.5.8",
+    "lodash": "^4.17.15",
+    "nodemon": "^1.19.3",
+    "xpress": "^2.4.6"
+  }
+}
