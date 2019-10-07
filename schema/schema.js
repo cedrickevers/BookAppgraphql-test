@@ -4,16 +4,16 @@ const _ = require("lodash");
 const {
   GraphQLObjectType,
   GraphQLString,
-  GraphQLInt,
+  GraphQLSchema,
   GraphQLID,
-  GraphQLSchema
+  GraphQLInt
 } = graphql;
 
 // dummy data
 var books = [
-  { name: "name1", genre: "test", id: "1" },
-  { name: "The name2", genre: "test2", id: "2" },
-  { name: "name3", genre: "Sci-test3", id: "3" }
+  { name: "name1", genre: "test", id: "1", authorId: "1" },
+  { name: "The name2", genre: "test2", id: "2", authorId: "2" },
+  { name: "name3", genre: "Sci-test3", id: "3", authorId: "3 " }
 ];
 
 var authors = [
@@ -27,7 +27,14 @@ const BookType = new GraphQLObjectType({
   fields: () => ({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
-    genre: { type: GraphQLString }
+    genre: { type: GraphQLString },
+    author: {
+      type: AuthorType,
+      resolve(parent, args) {
+        console.log(parent);
+        return _.find(authors, { id: parent.authorId });
+      }
+    }
   })
 });
 
@@ -60,6 +67,7 @@ const RootQuery = new GraphQLObjectType({
     }
   }
 });
+
 module.exports = new GraphQLSchema({
   query: RootQuery
 });
