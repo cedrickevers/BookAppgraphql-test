@@ -7,7 +7,7 @@ const app = express();
 
 mongoose
   .connect(
-    "mongodb+srv://miakis:test@cluster0-usysc.mongodb.net/admin?retryWrites=true&w=majority",
+    "mongodb+srv://miakis:test@cluster0-hkcoh.mongodb.net/test?retryWrites=true&w=majority",
     {
       useNewUrlParser: true,
       useUnifiedTopology: true
