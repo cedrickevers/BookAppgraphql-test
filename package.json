@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/cedrickevers/graphql-test#readme",
   "dependencies": {
+    "cors": "^2.8.5",
     "express-graphql": "^0.9.0",
     "graphql": "^14.5.8",
     "lodash": "^4.17.15",
