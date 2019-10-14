@@ -1,6 +1,8 @@
 const graphql = require("graphql");
 const Book = require("../models/book");
 const Author = require("../models/author");
+const Comment = require("../models/comment");
+
 const _ = require("lodash");
 
 const {
@@ -25,6 +27,15 @@ const BookType = new GraphQLObjectType({
         return Author.findById(parent.authorId);
       }
     }
+  })
+});
+const CommenType = new GraphQLObjectType({
+  name: "comment",
+  fields: () => ({
+    id: { type: GraphQLID },
+    title: { type: GraphQLString },
+    review: { type: GraphQLString },
+    score: { type: GraphQLInt }
   })
 });
 
@@ -60,6 +71,13 @@ const RootQuery = new GraphQLObjectType({
         return Author.findById(args.id);
       }
     },
+    comment: {
+      type: CommenType,
+      args: { id: { type: GraphQLString } },
+      resolve(parent, args) {
+        return Book.findById(args.id);
+      }
+    },
     books: {
       type: new GraphQLList(BookType),
       resolve(parent, args) {
@@ -70,6 +88,12 @@ const RootQuery = new GraphQLObjectType({
       type: new GraphQLList(AuthorType),
       resolve(parent, args) {
         return Author.find({});
+      }
+    },
+    Comments: {
+      type: new GraphQLList(CommenType),
+      resolve(parent, args) {
+        return Comment.find({});
       }
     }
   }
@@ -106,6 +130,22 @@ const Mutation = new GraphQLObjectType({
           authorId: args.authorId
         });
         return book.save();
+      }
+    },
+    addComment: {
+      type: CommenType,
+      args: {
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        review: { type: new GraphQLNonNull(GraphQLString) },
+        score: { type: new GraphQLNonNull(GraphQLInt) }
+      },
+      resolve(parent, args) {
+        let comment = new Comment({
+          title: args.title,
+          review: args.review,
+          score: args.score
+        });
+        return comment.save();
       }
     }
   }
