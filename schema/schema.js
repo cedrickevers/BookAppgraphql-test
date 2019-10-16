@@ -1,7 +1,13 @@
 const graphql = require("graphql");
 const Book = require("../models/book");
 const Author = require("../models/author");
-const Comment = require("../models/comment");
+const Comment = require("../models/comment")
+const apolloServer= require('apollo-server');
+const bcrypt = require('bcryptjs')
+const bodyParser = require('body-parser')
+
+
+const gql = require('graphql-tag');
 
 const _ = require("lodash");
 
@@ -15,27 +21,58 @@ const {
   GraphQLNonNull
 } = graphql;
 
+const LoginType = new GraphQLObjectType({
+  name: "Login",
+  fields: () => ({
+    email: { type: GraphQLID },
+    name: { type: GraphQLString },
+    role: { type: GraphQLString },
+    id: { type: GraphQLID },
+  })
+});
+
+
+
 const BookType = new GraphQLObjectType({
   name: "Book",
   fields: () => ({
     id: { type: GraphQLID },
-    name: { type: GraphQLString },
+    cover: { type: GraphQLString },
+    format: { type: GraphQLString },
+    title: { type: GraphQLString },
+    subtitle: { type: GraphQLString },
+    lang: { type: GraphQLString },
     genre: { type: GraphQLString },
+    stock: { type: GraphQLInt },
+    ISBN: { type: GraphQLString },
     author: {
       type: AuthorType,
       resolve(parent, args) {
         return Author.findById(parent.authorId);
       }
+    },
+    comment: {
+      type: CommenType,
+      resolve(parent, args){
+        return Comment.findById(parent.commentId)
+      }
     }
   })
 });
+
 const CommenType = new GraphQLObjectType({
   name: "comment",
   fields: () => ({
     id: { type: GraphQLID },
     title: { type: GraphQLString },
     review: { type: GraphQLString },
-    score: { type: GraphQLInt }
+    score: { type: GraphQLInt },
+    books: { 
+      type: new GraphQLList(BookType),
+      resolve(parent,arg){
+        return book.find()
+      }
+    }
   })
 });
 
@@ -119,15 +156,29 @@ const Mutation = new GraphQLObjectType({
     addBook: {
       type: BookType,
       args: {
-        name: { type: new GraphQLNonNull(GraphQLString) },
         genre: { type: new GraphQLNonNull(GraphQLString) },
-        authorId: { type: new GraphQLNonNull(GraphQLID) }
+        title: { type: new GraphQLNonNull (GraphQLString) },
+        subtitle: { type:  new GraphQLNonNull(GraphQLString) },
+        cover: { type: new GraphQLNonNull( GraphQLString) },
+        lang: { type: new GraphQLNonNull (GraphQLString) },
+        format: { type: new GraphQLNonNull (GraphQLString) },
+        genre: { type: new GraphQLNonNull (GraphQLString) },
+        stock: { type:new GraphQLNonNull( GraphQLInt) },
+        ISBN: { type: new GraphQLNonNull (GraphQLString) },
+        authorId: { type: new GraphQLNonNull(GraphQLID) },
+        commentId: {type: new GraphQLNonNull(GraphQLID)}
       },
       resolve(parent, args) {
         let book = new Book({
-          name: args.name,
+          format: args.format,
+          stock: args.stock,
           genre: args.genre,
-          authorId: args.authorId
+          ISBN: args.ISBN,
+          lang: args.lang,
+          genre: args.genre,
+          genre: args.genre,
+          authorId: args.authorId,
+          commentId: args.commentId
         });
         return book.save();
       }
@@ -135,7 +186,7 @@ const Mutation = new GraphQLObjectType({
     addComment: {
       type: CommenType,
       args: {
-        title: { type: new GraphQLNonNull(GraphQLString) },
+        title: { type: GraphQLString },
         review: { type: new GraphQLNonNull(GraphQLString) },
         score: { type: new GraphQLNonNull(GraphQLInt) }
       },
