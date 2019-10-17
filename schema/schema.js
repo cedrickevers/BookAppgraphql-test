@@ -2,9 +2,13 @@ const graphql = require("graphql");
 const Book = require("../models/book");
 const Author = require("../models/author");
 const Comment = require("../models/comment")
+const User = require("../models/user")
+
 const apolloServer= require('apollo-server');
 const bcrypt = require('bcryptjs')
 const bodyParser = require('body-parser')
+const jsonWebToken = require("jsonwebtoken");
+
 
 
 const gql = require('graphql-tag');
@@ -91,6 +95,22 @@ const AuthorType = new GraphQLObjectType({
   })
 });
 
+const UserType = new GraphQLObjectType({
+  name: "User",
+  fields: () => ({
+    email: { type: GraphQLString },
+    name: { type: GraphQLString },
+    password: { type: GraphQLString },
+    id: { type: GraphQLID },
+    comment: {
+      type: GraphQLList(CommenType),
+      resolve(parent, args) {
+        return comment.filter(comments, { userId: parent.id });
+      }
+    }
+  })
+});
+
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
@@ -132,7 +152,20 @@ const RootQuery = new GraphQLObjectType({
       resolve(parent, args) {
         return Comment.find({});
       }
-    }
+    },
+    user: {
+      type: UserType,
+      args: { 
+        id: { type: GraphQLID }
+      },
+
+    },
+    users: {
+      type: new GraphQLList(UserType),
+      resolve(parent, args) {
+        return User.find({});
+      }
+    },
   }
 });
 
@@ -175,14 +208,32 @@ const Mutation = new GraphQLObjectType({
           genre: args.genre,
           ISBN: args.ISBN,
           lang: args.lang,
+          cover: args.cover,
           genre: args.genre,
-          genre: args.genre,
+          title:args.title,
+          subtititle:args.subtitile,
           authorId: args.authorId,
           commentId: args.commentId
         });
         return book.save();
       }
-    },
+    },   
+
+    editBook: {
+      type: BookType,
+      args: {
+        id: { type: GraphQLID },
+        author_id: { type: GraphQLID },
+        title: { type: GraphQLString },
+        subtitle: { type: GraphQLString },
+        cover: { type: GraphQLString },
+        lang: { type: GraphQLString },
+        format_book: { type: GraphQLString },
+        genre: { type: GraphQLString },
+        stock: { type: GraphQLInt },
+        ISBN: { type: GraphQLString }
+      }
+    }, 
     addComment: {
       type: CommenType,
       args: {
@@ -197,8 +248,46 @@ const Mutation = new GraphQLObjectType({
           score: args.score
         });
         return comment.save();
+      },
+    },
+    signUp: {
+      type: UserType,
+      args: {
+        email: { type: GraphQLString },
+        name: { type: GraphQLString },
+        password: { type: GraphQLString }
+      },
+      resolve(parent, args) {
+        if (args.email && args.password) {
+          //a simple if/else to check if email already exists in db
+          User.findOne({ email: args.email }, function(err, user) {
+            if(err) {
+              throw new Error(err)
+            }
+
+            //if a user was found, that means the user's email matches the entered email
+            if (user) {
+                let errR = new Error('A user with that email hasS already registered. Please use a different email..')
+                err.status = 400;
+                return errR
+            } else {
+                //code if no user with entered email was found
+                let userC = new User({
+                  email: args.email,
+                  name: args.name || null,
+                  password: bcrypt.hashSync(args.password, 10)
+                  // mdp => hash => XXX
+                  // mdp + random1 => hash => <random1>YYY
+                  // XXX / YYY => on peut pas retrouver le mdp et chaque XXX / YYY est unique
+                });
+                return userC.save();
+            }
+          });
+        } else {
+          throw new Error("password or email can not be unset");
+        }
       }
-    }
+    },
   }
 });
 
@@ -206,3 +295,4 @@ module.exports = new GraphQLSchema({
   query: RootQuery,
   mutation: Mutation
 });
+
