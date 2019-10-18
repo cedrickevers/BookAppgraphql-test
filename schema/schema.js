@@ -4,6 +4,7 @@ const Author = require("../models/author");
 const Comment = require("../models/comment")
 const User = require("../models/user")
 
+
 const apolloServer= require('apollo-server');
 const bcrypt = require('bcryptjs')
 const bodyParser = require('body-parser')
@@ -25,15 +26,7 @@ const {
   GraphQLNonNull
 } = graphql;
 
-const LoginType = new GraphQLObjectType({
-  name: "Login",
-  fields: () => ({
-    email: { type: GraphQLID },
-    name: { type: GraphQLString },
-    role: { type: GraphQLString },
-    id: { type: GraphQLID },
-  })
-});
+
 
 
 
@@ -101,6 +94,7 @@ const UserType = new GraphQLObjectType({
     email: { type: GraphQLString },
     name: { type: GraphQLString },
     password: { type: GraphQLString },
+    token: { type: GraphQLString },
     id: { type: GraphQLID },
     comment: {
       type: GraphQLList(CommenType),
@@ -165,7 +159,7 @@ const RootQuery = new GraphQLObjectType({
       resolve(parent, args) {
         return User.find({});
       }
-    },
+    },    
   }
 });
 
@@ -282,10 +276,28 @@ const Mutation = new GraphQLObjectType({
                 });
                 return userC.save();
             }
-          });
+          }); 
         } else {
           throw new Error("password or email can not be unset");
         }
+      }
+    },
+    login: {
+      type: UserType,
+      args: {
+        email: { type: GraphQLString },
+        password: { type: GraphQLString }
+      },
+      resolve(parent, args) {
+        let user = User.findOne({ email: args.email }, (err, res) => {
+          if(err) return err
+          if(res){
+            return res
+          } else {
+            return "Login failed"
+          }
+        })
+        return user
       }
     },
   }
@@ -295,4 +307,3 @@ module.exports = new GraphQLSchema({
   query: RootQuery,
   mutation: Mutation
 });
-
