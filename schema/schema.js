@@ -1,5 +1,5 @@
 const graphql = require("graphql");
-const Book = require("/models/book");
+const Book = require("../models/book");
 const Author = require("../models/author");
 const Comment = require("../models/comment")
 const User = require("../models/user")
