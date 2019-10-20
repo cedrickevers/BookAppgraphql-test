@@ -3,19 +3,19 @@ const Book = require("../models/book");
 const Author = require("../models/author");
 const Comment = require("../models/comment")
 const User = require("../models/user")
-
-
+ 
+ 
 const apolloServer= require('apollo-server');
 const bcrypt = require('bcryptjs')
 const bodyParser = require('body-parser')
 const jsonWebToken = require("jsonwebtoken");
-
-
-
+ 
+ 
+ 
 const gql = require('graphql-tag');
-
+ 
 const _ = require("lodash");
-
+ 
 const {
   GraphQLObjectType,
   GraphQLString,
@@ -25,11 +25,11 @@ const {
   GraphQLList,
   GraphQLNonNull
 } = graphql;
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
 const BookType = new GraphQLObjectType({
   name: "Book",
   fields: () => ({
@@ -56,7 +56,7 @@ const BookType = new GraphQLObjectType({
     }
   })
 });
-
+ 
 const CommenType = new GraphQLObjectType({
   name: "comment",
   fields: () => ({
@@ -72,7 +72,7 @@ const CommenType = new GraphQLObjectType({
     }
   })
 });
-
+ 
 const AuthorType = new GraphQLObjectType({
   name: "Author",
   fields: () => ({
@@ -87,7 +87,7 @@ const AuthorType = new GraphQLObjectType({
     }
   })
 });
-
+ 
 const UserType = new GraphQLObjectType({
   name: "User",
   fields: () => ({
@@ -96,6 +96,7 @@ const UserType = new GraphQLObjectType({
     password: { type: GraphQLString },
     token: { type: GraphQLString },
     id: { type: GraphQLID },
+    role: { type: GraphQLID },
     comment: {
       type: GraphQLList(CommenType),
       resolve(parent, args) {
@@ -104,7 +105,7 @@ const UserType = new GraphQLObjectType({
     }
   })
 });
-
+ 
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
@@ -152,7 +153,7 @@ const RootQuery = new GraphQLObjectType({
       args: { 
         id: { type: GraphQLID }
       },
-
+ 
     },
     users: {
       type: new GraphQLList(UserType),
@@ -162,7 +163,7 @@ const RootQuery = new GraphQLObjectType({
     },    
   }
 });
-
+ 
 const Mutation = new GraphQLObjectType({
   name: "Mutation",
   fields: {
@@ -212,7 +213,7 @@ const Mutation = new GraphQLObjectType({
         return book.save();
       }
     },   
-
+ 
     editBook: {
       type: BookType,
       args: {
@@ -254,16 +255,14 @@ const Mutation = new GraphQLObjectType({
       resolve(parent, args) {
         if (args.email && args.password) {
           //a simple if/else to check if email already exists in db
-          User.findOne({ email: args.email }, function(err, user) {
+          let user = User.findOne({ email: args.email }, function(err, user) {
             if(err) {
               throw new Error(err)
             }
-
+ 
             //if a user was found, that means the user's email matches the entered email
             if (user) {
-                let errR = new Error('A user with that email hasS already registered. Please use a different email..')
-                err.status = 400;
-                return errR
+                return new Error('A user with that email hasS already registered. Please use a different email..')
             } else {
                 //code if no user with entered email was found
                 let userC = new User({
@@ -276,7 +275,8 @@ const Mutation = new GraphQLObjectType({
                 });
                 return userC.save();
             }
-          }); 
+          });
+          return user
         } else {
           throw new Error("password or email can not be unset");
         }
@@ -290,19 +290,45 @@ const Mutation = new GraphQLObjectType({
       },
       resolve(parent, args) {
         let user = User.findOne({ email: args.email }, (err, res) => {
-          if(err) return err
+          if(err) throw err
           if(res){
-            return res
-          } else {
-            return "Login failed"
+            if(bcrypt.compareSync(args.password, res.password)){
+              if(! res.token ){
+              console.log(res.token)
+                token = jsonWebToken.sign({
+                  data: {
+                    role: "member",
+                    email: args.email
+                  }
+                }, 'secret');
+                res.token = token
+                res.save()
+              }
+            }
           }
-        })
+        });
         return user
+      }
+    },
+    editRole: {
+      type: UserType,
+      args: {
+        token: { type: GraphQLString },
+        email: { type: GraphQLString },
+        role: { type: GraphQLString }
+      },
+      resolve(parent, args) {
+        // Check token email
+        let decoded = jsonWebToken.verify(args.token, 'secret')
+        if(decoded.role == 'admin'){          
+          let user = User.findOneAndUpdate({ email: args.email }, { role: args.role }, {new: true})
+          return user
+        }
       }
     },
   }
 });
-
+ 
 module.exports = new GraphQLSchema({
   query: RootQuery,
   mutation: Mutation
